@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>排序可视化</title>
+	<link rel="icon" href="sort.png" type="image/x-icon" />
+	<!-- <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/> -->
+
+	<style>
+	*{
+		margin: 0px;
+	}
+	html,body{
+		width: 100%;
+		height: 100%;
+		background: rgb(50, 50, 50);
+	}
+	#option{
+		position: absolute;
+		top: 5%;
+		left: 2%;
+		width: 14%;
+		height: 90%;
+		background: black;
+		color: orange;
+		font-weight: bold;
+		font-size: 18px;
+	}
+	#option table{
+		width: 100%;
+		height: 100%;
+		text-align: center;
+	}
+	#option input,select,button{
+		background: orange;
+		width: 100px;
+		border: none;
+		outline: none;
+		font-size: 18px;
+	}
+	#control{
+		background: black;
+		position: absolute;
+		top :calc(80% + 30px);
+		bottom: 5%;
+		left: 18%;
+		width: 80%;
+	}
+	#control table{
+		margin-left: 10%;
+		width: 80%;
+		height: 100%;
+		text-align: center;
+		color: orange;
+	}
+	#field{
+		position: absolute;
+		top: 5%;
+		left: 18%;
+		width: 80%;
+		height:75%;
+	}
+	.bar{
+		background: black;
+		position:absolute;
+		height: 100%;
+		transition: all 300ms ease;
+	}
+	.show{
+		position: absolute;
+		width: 90%;
+		margin-left: 5%;
+		margin-right: 5%;
+		background: orange;
+		color: white;
+		bottom:0;
+	}
+	.value{
+		background: rgb(180, 130, 0);
+		position: absolute;
+		text-align: center;
+		bottom: -24px;
+		height: 22px;
+		width: 90%;
+		margin-left: 5%;
+		margin-right: 5%;
+	}
+	.sign{
+		position: absolute;
+		height: 2px;
+		width: 100%;
+		background: lightgreen;
+		display: none;
+	}
+	.area{
+		background: gray;
+	}
+	</style>
+</head>
+<body>
+	<div id=option>
+		<table>
+			<tr></tr><tr></tr>
+			<tr>
+				<td>排序数量</td>
+				<td><input type="text" id="length" name="length" value="20"></td>
+			</tr>
+			<tr>
+				<td>数组类型</td>
+				<td>
+					<select id="type" name="type">
+						<option selected value="random">
+							随机
+						</option>
+						<option value="asc">
+							正序
+						</option>
+						<option value="desc">
+							逆序
+						</option>
+						<option value="rotateAsc">
+							旋转正序
+						</option>
+						<option value="rotateDesc">
+							旋转逆序
+						</option>
+						<option value="nearAsc">
+							近似正序
+						</option>
+						<option value="nearDesc">
+							近似逆序
+						</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2"><button>生成数组</button></td>
+			</tr>
+			<tr></tr>
+			<tr>
+				<td>排序方式</td>
+				<td>
+					<select name="solution">
+						<option selected value="pop">
+							冒泡
+						</option>
+						<option value="quick">
+							快排
+						</option>
+						<option value="insert">
+							插入
+						</option><!-- 
+						<option value="shell">
+							希尔
+						</option>
+						<option value="combine">
+							归并
+						</option> -->
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>步进速度</td>
+				<td>
+					<select class="options" name="speed">
+						<option value="2000">
+							2s
+						</option>
+						<option value="1000">
+							1s
+						</option>
+						<option value="500">
+							0.5s
+						</option>
+						<option selected value="300">
+							0.3s
+						</option>
+						<option value="100">
+							0.1s
+						</option>
+						<option value="0">
+							Fasted
+						</option>
+					</select>
+				</td>
+			</tr>
+			<tr></tr><tr></tr><tr></tr>
+		</table>
+	</div>
+	<div id=field>
+	</div>
+	<div id=control>
+		<table><tr>
+			<td><button id="pause">暂停</button></td>
+			<td><button>一轮循环</button></td>
+			<td><button>步进</button></td>
+			<td><button>重置</button></td>
+		</tr></table>
+	</div>
+	<script src="https://code.jquery.com/jquery-1.11.3.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			newFun();
+			spawn();
+			sort();
+			// $('.bar:eq(2)').area($('.bar:eq(10)'));
+			// sign(20);
+		});
+
+		var length = 20;
+		var type = 'random';
+
+		var auto = 2;
+		var speed = 300;
+
+		var solution = 'pop';
+
+		var nums = [];
+		var opes = [];
+
+		var step = 0;
+		var tmpNums = [];
+
+		var done = false;
+
+		function sort()
+		{
+			opes = [];
+			auto = 0;
+			step = 0;
+			$('#pause').html('播放');
+			switch(solution)
+			{
+				case 'quick':
+					if(nums.length > 20)
+					{
+						alert('快速排序占用内存过大，无法对数量大于20的数组进行排序，请重新生成或选择其他排序方式');
+						return;
+					}
+					quickSort();
+				break;
+				case 'pop':
+					popSort();
+				break;
+				case 'insert':
+					insertSort();
+				break;
+			}
+		}
+		function insertSort()
+		{
+			var tmpNums = nums.slice();
+			var tmpMin;
+			for(var i = 0; i < tmpNums.length - 1; i++)
+			{
+				opes[opes.length] = ['area', i, tmpNums.length - 1];
+				tmpMin = i;
+				for(var j = i + 1; j < tmpNums.length; j++)
+				{
+					opes[opes.length] = ['compare', tmpMin, j];
+					if(tmpNums[tmpMin] > tmpNums[j])
+					{
+						tmpMin = j;
+					}
+				}
+				var tmpVal = tmpNums[tmpMin];
+				while(tmpMin > i)
+				{
+					opes[opes.length] = ['setVal', tmpMin, tmpNums[tmpMin - 1]];
+					tmpNums[tmpMin]= tmpNums[--tmpMin];
+				}
+				opes[opes.length] = ['setVal', tmpMin, tmpVal];
+				tmpNums[tmpMin] = tmpVal;
+			}
+			opes[opes.length] = ['area', -1, -1];
+		}
+		function quickSort()
+		{
+			var tmpNums = nums.slice();
+			var stack = [];
+			var stackLength = 0;
+			var start = 0;
+			var end = tmpNums.length - 1;
+			var signS = start;
+			var signE = end - 1;
+			var pop;
+			var tmp;
+			opes[opes.length] = ['area', start, end];
+			opes[opes.length] = ['sign', tmpNums[end]];
+			while(true)
+			{
+				if(end - start < 2)
+				{
+					if(end - start > 0)
+					{
+						opes[opes.length] = ['area', start, end];
+						opes[opes.length] = ['sign', tmpNums[end]];
+						opes[opes.length] = ['compare', start, end];
+						if(tmpNums[start] > tmpNums[end])
+						{
+							opes[opes.length] = ['trans', start, end];
+							tmp            = tmpNums[start];
+							tmpNums[start] = tmpNums[end];
+							tmpNums[end]   = tmp;
+						}
+					}
+					if(stackLength <= 0)
+						break;
+					console.log(stack);
+					pop = stack[--stackLength];
+					console.log(stack);
+					console.log(stackLength);
+					start = signS = pop[0];
+					end   = pop[1];
+					signE = end - 1;
+					if(end - start >1)
+					{
+						opes[opes.length] = ['area', start, end];
+						opes[opes.length] = ['sign', tmpNums[end]];
+					}
+				}
+				else
+				{
+					while(signS < signE)
+					{
+						while(signS < signE && tmpNums[signS] < tmpNums[end])
+						{
+							opes[opes.length] = ['compare', signS, end];
+							signS++;
+						}
+						opes[opes.length] = ['compare', signS, end];
+						while(signS < signE && tmpNums[signE] > tmpNums[end])
+						{
+							opes[opes.length] = ['compare', signE, end];
+							signE--;
+						}
+						opes[opes.length] = ['compare', signE, end];
+						opes[opes.length] = ['compare', signS, signE];
+						if(signS != signE)
+						{
+							opes[opes.length] = ['trans', signS, signE];
+							tmp         = tmpNums[signE];
+							tmpNums[signE] = tmpNums[signS];
+							tmpNums[signS]   = tmp;
+						}
+					}
+					opes[opes.length] = ['compare', signE, end];
+					if(tmpNums[signE] > tmpNums[end])
+					{
+						opes[opes.length] = ['trans', signE, end];
+						tmp        	   = tmpNums[signE];
+						tmpNums[signE] = tmpNums[end];
+						tmpNums[end]   = tmp;
+					}
+					if(end - signE > 1)
+					{
+						console.log(stack);
+						stack[stackLength++] = [signE + 1, end];
+						console.log(stack);
+						console.log(stackLength);
+					}
+					signS = start;
+					end   = signE;
+					signE = end - 1;
+					if(end - start >1)
+					{
+						opes[opes.length] = ['area', start, end];
+						opes[opes.length] = ['sign', tmpNums[end]];
+					}
+				}
+			}
+			opes[opes.length] = ['area', -1,-1];
+			opes[opes.length] = ['sign', 0];
+			stack = null;
+		}
+		function popSort()
+		{
+			var tmpNums = nums.slice();
+			for(i = tmpNums.length - 1; i > 0; i--)
+			{
+				opes[opes.length] = ['area', 0, i];
+				for(j = 0; j < i; j++)
+				{
+					opes[opes.length] = ['compare', j, j + 1];
+					if(tmpNums[j] > tmpNums[j + 1])
+					{
+						opes[opes.length] = ['trans', j, j + 1];
+						var tmp = tmpNums[j];
+						tmpNums[j] = tmpNums[j + 1];
+						tmpNums[j + 1] = tmp;
+					}
+				}
+			}
+			opes[opes.length] = ['area', -1,-1];
+		}
+
+		function stepShow(pass = false)
+		{
+			if(done)
+			{
+				step = 0;
+				done = false;
+				showNums();
+			}
+			if(tmpNums.length == 0)
+			{
+				tmpNums = nums;
+				$('#pause').html('播放');
+			}
+			if(auto == 0 && pass == false)
+			{
+				$('#pause').html('播放');
+				return;
+			}
+			if(step == opes.length)
+			{
+				done = true;
+				$('#pause').html('播放');
+			}
+			else
+			{
+				switch(opes[step][0]){
+					case 'area':
+						if(auto < 2 && pass == false)
+						{
+							$('#pause').html('播放');
+							return;
+						}
+						else if(opes[step][1] == -1)
+						{
+							$('.area').removeClass('area');
+						}
+						else
+						{
+							$('.bar:eq(' + opes[step][1] + ')').area($('.bar:eq(' + opes[step][2] + ')'));
+						}
+					break;
+					case 'compare':
+						$('.bar:eq(' + opes[step][1] + ')').compare($('.bar:eq(' + opes[step][2] + ')'));
+					break;
+					case 'trans':
+						$('.bar:eq(' + opes[step][1] + ')').trans($('.bar:eq(' + opes[step][2] + ')'));
+					break;
+					case 'setVal':
+						$('.bar:eq(' + opes[step][1] + ')').setVal(opes[step][2]);
+					break;
+					case 'sign':
+						sign(opes[step][1]);
+					break;
+				}
+				step++;
+				setTimeout(function(){stepShow();}, speed);
+			}
+		}
+
+		function spawn()
+		{
+			length =  $('#length').val();
+			type = $('#type').val();
+			nums = [];
+			opes = [];
+			auto = 0;
+			switch(type)
+			{
+				case 'asc':
+					for(var i = 0; i < length; i++)
+					{
+						nums[i] = parseInt(100 / length * (i + 1));
+					}
+				break;
+				case 'desc':
+					for(var i = 0; i < length; i++)
+					{
+						nums[i] = parseInt(100 / length * (length - i));
+					}
+				break;
+				case 'rotateAsc':
+					var sign = parseInt(Math.random() * length);
+					for(var i = 0; i < length; i++)
+					{
+						nums[i] = parseInt(100 / length * ((i + sign > length ? i + sign - length : i + sign)));
+					}
+				break;
+				case 'rotateDesc':
+					var sign = parseInt(Math.random() * length);
+					for(var i = 0; i < length; i++)
+					{
+						nums[i] = parseInt(100 / length * (length - (i + sign > length ? i + sign - length : i + sign))) + 1;
+					}
+				break;
+				case 'nearAsc':
+					for(var i = 0; i < length; i++)
+					{
+						nums[i] = parseInt(100 / length * (i + 1) + Math.random() * 20 - 10);
+						if(nums[i] > 100)
+							nums[i] = 100;
+						if(nums[i] < 1)
+							nums[i] = 1;
+					}
+				break;
+				case 'nearDesc':
+					for(var i = 0; i < length; i++)
+					{
+						nums[i] = parseInt(100 / length * (length - i) + Math.random() * 20 - 10);
+						if(nums[i] > 100)
+							nums[i] = 100;
+						if(nums[i] < 1)
+							nums[i] = 1;
+					}
+				break;
+				case 'random':
+				default:
+					for(var i = 0; i < length; i++)
+					{
+						nums[i] = parseInt(Math.random() * 100 + 1);
+					}
+				break;
+			}
+			showNums();
+			sort();
+		}
+
+		function showNums()
+		{
+			$('#field').empty();
+			for(var i = 0; i < length; i++)
+			{
+				$('#field').append('<div class=bar><div class=show></div><div class=value></div><div class=sign></div></div>');
+				var now = $('.bar:eq(' + i + ')');
+				$(now[0].children[1]).html(nums[i]);
+				now.css('width', 100 / length + '%');
+				$(now[0].children[0]).css('height', nums[i] + '%');
+				now.css('left', (100 / length) * i + '%');
+			}
+		}
+
+		function newFun()
+		{
+			$('input').on('blur', function()
+			{
+				switch($(this)[0].name)
+				{
+					case 'length':
+						if($(this).val() > 1000)
+							if( ! confirm('排序数量超过1000将有可能导致卡死，是否继续？'))
+							{
+								$(this).val(length);
+								return;
+							}
+					break;
+				}
+			});
+			$('select').on('change', function()
+			{
+				switch($(this)[0].name)
+				{
+					case 'speed':
+						speed = $(this).val();
+					break;
+					case 'solution':
+						solution = $(this).val();
+						showNums();
+						sort();
+					break;
+				}
+			});
+			$('button').on('click', function(){
+				switch($(this).html())
+				{
+					case '生成数组':
+						spawn();
+					break;
+					case '暂停':
+						auto = 0;
+						$(this).html('播放');
+					break;
+					case '播放':
+						auto = 2;
+						$(this).html('暂停');
+						stepShow();
+					break;
+					case '一轮循环':
+						auto = 1;
+						if($('#pause').html() == '暂停')
+							return;
+						$('#pause').html('暂停');
+						stepShow(true);
+					break;
+					case '步进':
+						auto = 0;
+						if($('#pause').html() == '暂停')
+							return;
+						stepShow(true);
+					break;
+					case '重置':
+						auto = 0;
+						step = 0;
+						showNums();
+						$('#pause').html('播放');
+					break;
+				}
+			});
+
+			$.fn.area = function(end){
+				$('.area').removeClass('area');
+				for(var i = $(this).index(); i <= $(end).index(); i++)
+				{
+					$($('.bar:eq(' + i + ')'))[0].classList.add('area');
+				}
+			};
+
+			$.fn.compare = function(other)
+			{
+				var indexA = this.index();
+				var indexB = other.index();
+				$($(this)[0].children[0]).css('background', 'yellow');
+				$($(other)[0].children[0]).css('background', 'yellow');
+				setTimeout(function(){
+					$($('.bar:eq(' + indexA + ')')[0].children[0]).css('background', 'orange');
+					$($('.bar:eq(' + indexB + ')')[0].children[0]).css('background', 'orange');
+				}, speed);
+			}
+
+			$.fn.trans = function(other)
+			{
+				var a = $($(this)[0].children[1]).html();
+				var b = $($(other)[0].children[1]).html();
+				$($(this)[0].children[0]).css('height', b + '%');
+				$($(this)[0].children[1]).html(b);
+				$($(other)[0].children[0]).css('height', a + '%');
+				$($(other)[0].children[1]).html(a);
+			}
+
+			$.fn.setVal = function(val)
+			{
+				$($(this)[0].children[0]).css('height', val + '%');
+				$($(this)[0].children[1]).html(val);
+			}
+		}
+
+		function sign(height = 0){
+			$('.sign').hide();
+			if(height != 0)
+			{
+				var tmpList = $('.area');
+				for(var i = 0; i < tmpList.length; i++)
+				{
+					$($(tmpList[i])[0].children[2]).css('display', 'block');
+					$($(tmpList[i])[0].children[2]).css('top', (100 - height) + '%');
+				}
+			}
+		}
+	</script>
+</body>
+</html>
