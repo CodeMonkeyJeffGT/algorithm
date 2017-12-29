@@ -149,13 +149,16 @@
 						</option>
 						<option value="insert">
 							插入
-						</option><!-- 
-						<option value="shell">
+						</option>
+						<option value="choose">
+							选择
+						</option>
+						<option value="quantumBogo">
+							量子猴排
+						</option>
+						<option value="shell" disabled>
 							希尔
 						</option>
-						<option value="combine">
-							归并
-						</option> -->
 					</select>
 				</td>
 			</tr>
@@ -222,21 +225,20 @@
 		var tmpNums = [];
 
 		var done = false;
+		var doing = false;
+
+		var monkeys = 1;
 
 		function sort()
 		{
 			opes = [];
+			tmpNums = nums.slice();
 			auto = 0;
 			step = 0;
 			$('#pause').html('播放');
 			switch(solution)
 			{
 				case 'quick':
-					if(nums.length > 20)
-					{
-						alert('快速排序占用内存过大，无法对数量大于20的数组进行排序，请重新生成或选择其他排序方式');
-						return;
-					}
 					quickSort();
 				break;
 				case 'pop':
@@ -245,11 +247,20 @@
 				case 'insert':
 					insertSort();
 				break;
+				case 'choose':
+					chooseSort();
+				break;
+				case 'quantumBogo':
+					opes = [
+						['compareAll'],
+						['random'],
+						['goto', 0]
+					];
+				break;
 			}
 		}
-		function insertSort()
+		function chooseSort()
 		{
-			var tmpNums = nums.slice();
 			var tmpMin;
 			for(var i = 0; i < tmpNums.length - 1; i++)
 			{
@@ -263,119 +274,56 @@
 						tmpMin = j;
 					}
 				}
+				opes[opes.length] = ['trans', tmpMin, i];
 				var tmpVal = tmpNums[tmpMin];
-				while(tmpMin > i)
+				tmpNums[tmpMin]= tmpNums[i];
+				tmpNums[i] = tmpVal;
+			}
+			opes[opes.length] = ['area', -1, -1];
+		}
+		function insertSort()
+		{
+			var tmpMin;
+			for(var i = 1; i < tmpNums.length; i++)
+			{
+				opes[opes.length] = ['area', 0, i];
+				var tmpVal = tmpNums[i];
+				var j = i - 1;
+				for(; j >= 0 && tmpVal < tmpNums[j]; j--)
 				{
-					opes[opes.length] = ['setVal', tmpMin, tmpNums[tmpMin - 1]];
-					tmpNums[tmpMin]= tmpNums[--tmpMin];
+					opes[opes.length] = ['compare', j, j + 1];
+					opes[opes.length] = ['setVal', j + 1, tmpNums[j]];
+					tmpNums[j + 1]= tmpNums[j];
 				}
-				opes[opes.length] = ['setVal', tmpMin, tmpVal];
-				tmpNums[tmpMin] = tmpVal;
+				opes[opes.length] = ['compare', j, j + 1];
+				opes[opes.length] = ['setVal', j + 1, tmpVal];
+				tmpNums[j + 1] = tmpVal;
 			}
 			opes[opes.length] = ['area', -1, -1];
 		}
 		function quickSort()
 		{
-			var tmpNums = nums.slice();
-			var stack = [];
-			var stackLength = 0;
-			var start = 0;
-			var end = tmpNums.length - 1;
-			var signS = start;
-			var signE = end - 1;
-			var pop;
-			var tmp;
-			opes[opes.length] = ['area', start, end];
-			opes[opes.length] = ['sign', tmpNums[end]];
-			while(true)
-			{
-				if(end - start < 2)
+			$.ajax({
+				url : 'sort.php',
+				method : 'post',
+				dataType : 'json',
+				data : {
+					s:'quick',
+					a:nums
+				},
+				success : function(result)
 				{
-					if(end - start > 0)
-					{
-						opes[opes.length] = ['area', start, end];
-						opes[opes.length] = ['sign', tmpNums[end]];
-						opes[opes.length] = ['compare', start, end];
-						if(tmpNums[start] > tmpNums[end])
-						{
-							opes[opes.length] = ['trans', start, end];
-							tmp            = tmpNums[start];
-							tmpNums[start] = tmpNums[end];
-							tmpNums[end]   = tmp;
-						}
-					}
-					if(stackLength <= 0)
-						break;
-					console.log(stack);
-					pop = stack[--stackLength];
-					console.log(stack);
-					console.log(stackLength);
-					start = signS = pop[0];
-					end   = pop[1];
-					signE = end - 1;
-					if(end - start >1)
-					{
-						opes[opes.length] = ['area', start, end];
-						opes[opes.length] = ['sign', tmpNums[end]];
-					}
-				}
-				else
+					opes = result;
+				},
+				error : function(err)
 				{
-					while(signS < signE)
-					{
-						while(signS < signE && tmpNums[signS] < tmpNums[end])
-						{
-							opes[opes.length] = ['compare', signS, end];
-							signS++;
-						}
-						opes[opes.length] = ['compare', signS, end];
-						while(signS < signE && tmpNums[signE] > tmpNums[end])
-						{
-							opes[opes.length] = ['compare', signE, end];
-							signE--;
-						}
-						opes[opes.length] = ['compare', signE, end];
-						opes[opes.length] = ['compare', signS, signE];
-						if(signS != signE)
-						{
-							opes[opes.length] = ['trans', signS, signE];
-							tmp         = tmpNums[signE];
-							tmpNums[signE] = tmpNums[signS];
-							tmpNums[signS]   = tmp;
-						}
-					}
-					opes[opes.length] = ['compare', signE, end];
-					if(tmpNums[signE] > tmpNums[end])
-					{
-						opes[opes.length] = ['trans', signE, end];
-						tmp        	   = tmpNums[signE];
-						tmpNums[signE] = tmpNums[end];
-						tmpNums[end]   = tmp;
-					}
-					if(end - signE > 1)
-					{
-						console.log(stack);
-						stack[stackLength++] = [signE + 1, end];
-						console.log(stack);
-						console.log(stackLength);
-					}
-					signS = start;
-					end   = signE;
-					signE = end - 1;
-					if(end - start >1)
-					{
-						opes[opes.length] = ['area', start, end];
-						opes[opes.length] = ['sign', tmpNums[end]];
-					}
+					opes = [];
+					alert('数组过大，消耗内存过多，无法实现快速排序，请更改数组大小或选择其他排序方式');
 				}
-			}
-			opes[opes.length] = ['area', -1,-1];
-			opes[opes.length] = ['sign', 0];
-			stack = null;
+			});
 		}
 		function popSort()
 		{
-			var tmpNums = nums.slice();
 			for(i = tmpNums.length - 1; i > 0; i--)
 			{
 				opes[opes.length] = ['area', 0, i];
@@ -404,7 +352,7 @@
 			}
 			if(tmpNums.length == 0)
 			{
-				tmpNums = nums;
+				tmpNums = nums.slice();
 				$('#pause').html('播放');
 			}
 			if(auto == 0 && pass == false)
@@ -419,6 +367,7 @@
 			}
 			else
 			{
+				var go = true;
 				switch(opes[step][0]){
 					case 'area':
 						if(auto < 2 && pass == false)
@@ -447,9 +396,30 @@
 					case 'sign':
 						sign(opes[step][1]);
 					break;
+					case 'random':
+						if(auto < 2 && pass == false)
+						{
+							$('#pause').html('播放');
+							return;
+						}
+						$('.bar').random();
+					break;
+					case 'compareAll':
+						go = false;
+						$('.bar').compareAll();
+					break;
+					case 'goto':
+						if(doing)
+						{
+							step--;
+							break;
+						}
+						step = opes[step][1] - 1;
+					break;
 				}
 				step++;
-				setTimeout(function(){stepShow();}, speed);
+				if(go)
+					setTimeout(function(){stepShow();}, speed);
 			}
 		}
 
@@ -520,16 +490,18 @@
 			sort();
 		}
 
-		function showNums()
+		function showNums(showNums = false)
 		{
+			if(false == showNums)
+				showNums = nums;
 			$('#field').empty();
 			for(var i = 0; i < length; i++)
 			{
 				$('#field').append('<div class=bar><div class=show></div><div class=value></div><div class=sign></div></div>');
 				var now = $('.bar:eq(' + i + ')');
-				$(now[0].children[1]).html(nums[i]);
+				$(now[0].children[1]).html(showNums[i]);
 				now.css('width', 100 / length + '%');
-				$(now[0].children[0]).css('height', nums[i] + '%');
+				$(now[0].children[0]).css('height', showNums[i] + '%');
 				now.css('left', (100 / length) * i + '%');
 			}
 		}
@@ -635,6 +607,52 @@
 			{
 				$($(this)[0].children[0]).css('height', val + '%');
 				$($(this)[0].children[1]).html(val);
+			}
+
+			$.fn.random = function()
+			{
+				monkeys++;
+				var tmpRandomArr = tmpNums.slice();
+				for(i = 0; i < tmpNums.length; i++)
+				{
+					var index = parseInt(Math.random() * (tmpNums.length - i));
+					tmpNums[i] = tmpRandomArr[index];
+					tmpRandomArr[index] = tmpRandomArr[tmpNums.length - i - 1];
+				}
+				showNums(tmpNums);
+				tmpRandomArr = null;
+			}
+
+			$.fn.compareAll = function(i = 0)
+			{
+				doing = true;
+				if(i >= tmpNums.length - 1)
+				{
+					monkeys = 1;
+					auto = 0;
+					doing = false;
+					$('#pause').html('播放');
+					tmpNums = nums.slice();
+					alert('量子猴排居然成功了！本次共创建了' + monkeys + '只量子猴子去不同的宇宙排序');
+					return;
+				}
+				$($('.bar:eq(' + i+ ')')[0].children[0]).css('background', 'yellow');
+				$($('.bar:eq(' + (i + 1) + ')')[0].children[0]).css('background', 'yellow');
+				setTimeout(function(){
+					$($('.bar:eq(' + i + ')')[0].children[0]).css('background', 'orange');
+					$($('.bar:eq(' + (i + 1) + ')')[0].children[0]).css('background', 'orange'); 	
+					if(tmpNums[i] > tmpNums[i + 1])
+					{
+						doing = false;
+						setTimeout(function()
+						{
+							stepShow();
+						}, speed);
+						return;
+					}
+					i++;
+					$(this).compareAll(i);
+				}, speed);
 			}
 		}
 
