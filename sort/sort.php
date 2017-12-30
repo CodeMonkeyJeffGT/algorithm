@@ -56,13 +56,13 @@ function quick($arr)
 		{
 			while($signS < $signE)
 			{
-				while($signS < $signE && $arr[$signS] < $arr[$end])
+				while($signS < $signE && $arr[$signS] <= $arr[$end])
 				{
 					$opes[] = ['compare', $signS, $end];
 					$signS++;
 				}
 				$opes[] = ['compare', $signS, $end];
-				while($signS < $signE && $arr[$signE] > $arr[$end])
+				while($signS < $signE && $arr[$signE] >= $arr[$end])
 				{
 					$opes[] = ['compare', $signE, $end];
 					$signE--;

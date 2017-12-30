@@ -26,10 +26,19 @@
 		font-weight: bold;
 		font-size: 18px;
 	}
-	#option table{
+	#option-control{
 		width: 100%;
-		height: 100%;
+		height: 60%;
 		text-align: center;
+	}
+	#option-description{
+		width: 100%;
+		height: 40%;
+		border-bottom: 1px solid orange;
+	}
+	#option-description td{
+		word-wrap:break-word;
+		word-break:break-all;
 	}
 	#option input,select,button{
 		background: orange;
@@ -95,12 +104,19 @@
 	.area{
 		background: gray;
 	}
+	#description{
+		font-size: 12px;
+		text-align: left;
+		padding: 5px;
+	}
 	</style>
 </head>
 <body>
 	<div id=option>
-		<table>
-			<tr></tr><tr></tr>
+		<table id=option-description>
+			<tr><td id=description></td></tr>
+		</table>
+		<table id="option-control">
 			<tr>
 				<td>排序数量</td>
 				<td><input type="text" id="length" name="length" value="20"></td>
@@ -136,22 +152,24 @@
 			<tr>
 				<td colspan="2"><button>生成数组</button></td>
 			</tr>
-			<tr></tr>
 			<tr>
 				<td>排序方式</td>
 				<td>
 					<select name="solution">
-						<option selected value="pop">
+						<option selected value="bubble">
 							冒泡
 						</option>
 						<option value="quick">
 							快排
 						</option>
-						<option value="insert">
+						<option value="insertion">
 							插入
 						</option>
-						<option value="choose">
+						<option value="selection">
 							选择
+						</option>
+						<option value="cocktailShaker">
+							鸡尾酒
 						</option>
 						<option value="quantumBogo">
 							量子猴排
@@ -187,7 +205,7 @@
 					</select>
 				</td>
 			</tr>
-			<tr></tr><tr></tr><tr></tr>
+			<tr></tr>
 		</table>
 	</div>
 	<div id=field>
@@ -216,7 +234,7 @@
 		var auto = 2;
 		var speed = 300;
 
-		var solution = 'pop';
+		var solution = 'bubble';
 
 		var nums = [];
 		var opes = [];
@@ -229,6 +247,16 @@
 
 		var monkeys = 1;
 
+		var description = {
+			bubble : '(1)从数组开始依次比较相邻的两个元素，如果前者比后者大，就交换他们两个，直至最后两个元素<br>(2)回到数组开始，执行步骤1，除了最后一个<br>(3)持续每次对越来越少的元素重复上面的步骤，直到没有任何一对数字需要比较<br>优点：易懂<br>缺点：较慢',
+			quick : '(1)设置数组最后一个元素为哨兵（或第一个），在比较域从左搜索大于哨兵的、从右搜索小于哨兵的进行交换，直至比较到同一个元素<br>(2)如果当前比较到的元素比哨兵大，交换它俩，否则不变<br>(3)依次对当前元素左右两侧重复1,2的步骤，直到无可比较元素。<br>注：可采用递归或非递归(循环加堆栈)实现<br>优点：很快<br>缺点：内存消耗过大',
+			insertion : '第一个元素为一个有序数组(数组内只有一个元素，自然是排好序的)，将第2个元素插入到这个数组内，使这个数组依然有序。依次插入后面的元素直至最后一个<br>插入方法为有序数组从大到小向右移动，直至到达对应的位置<br>优点：比冒泡快<br>缺点：对逆序数组排序，速度降至冒泡级别',
+			selection : '(1)从第一元素开始向右查找最小的元素，与第一元素交换位置<br>(2)从下一个元素开始查找<br>(3)重复2直至只剩一个元素',
+			quantumBogo : 'Bogo排序(猴子排序)，是一种恶搞排序算法<br>依照量子理论的平行宇宙，让一群猴子在不同的宇宙把数组随机打乱，如果不是正确顺序，则销毁这个宇宙去查看下一个宇宙<br>优点：神TM优点<br>缺点：太慢了！',
+			cocktailShaker : '跟冒泡排序很像，只不过是来回冒泡，蛮好看的2333'
+
+		};
+
 		function sort()
 		{
 			opes = [];
@@ -239,19 +267,30 @@
 			switch(solution)
 			{
 				case 'quick':
+					$('#description').html(description.quick);
 					quickSort();
 				break;
-				case 'pop':
-					popSort();
+				case 'bubble':
+					$('#description').html(description.bubble);
+					bubbleSort();
 				break;
-				case 'insert':
-					insertSort();
+				case 'insertion':
+					$('#description').html(description.insertion);
+					insertionSort();
 				break;
-				case 'choose':
-					chooseSort();
+				case 'selection':
+					$('#description').html(description.selection);
+					selectionSort();
+				break;
+				case 'cocktailShaker':
+					$('#description').html(description.cocktailShaker);
+					cocktailShakerSort();
 				break;
 				case 'quantumBogo':
+					monkeys = 1;
+					$('#description').html(description.quantumBogo);
 					opes = [
+						['area', 0, nums.length - 1],
 						['compareAll'],
 						['random'],
 						['goto', 0]
@@ -259,7 +298,7 @@
 				break;
 			}
 		}
-		function chooseSort()
+		function selectionSort()
 		{
 			var tmpMin;
 			for(var i = 0; i < tmpNums.length - 1; i++)
@@ -281,7 +320,7 @@
 			}
 			opes[opes.length] = ['area', -1, -1];
 		}
-		function insertSort()
+		function insertionSort()
 		{
 			var tmpMin;
 			for(var i = 1; i < tmpNums.length; i++)
@@ -289,14 +328,17 @@
 				opes[opes.length] = ['area', 0, i];
 				var tmpVal = tmpNums[i];
 				var j = i - 1;
+				opes[opes.length] = ['sign', tmpVal];
+				opes[opes.length] = ['compare', j, j];
 				for(; j >= 0 && tmpVal < tmpNums[j]; j--)
 				{
-					opes[opes.length] = ['compare', j, j + 1];
 					opes[opes.length] = ['setVal', j + 1, tmpNums[j]];
 					tmpNums[j + 1]= tmpNums[j];
+					if(j != 0)
+					opes[opes.length] = ['compare', j - 1, j - 1];
 				}
-				opes[opes.length] = ['compare', j, j + 1];
 				opes[opes.length] = ['setVal', j + 1, tmpVal];
+				opes[opes.length] = ['sign', 0];
 				tmpNums[j + 1] = tmpVal;
 			}
 			opes[opes.length] = ['area', -1, -1];
@@ -322,7 +364,42 @@
 				}
 			});
 		}
-		function popSort()
+		function cocktailShakerSort()
+		{
+			var signS = 0;
+			var signE = tmpNums.length - 1;
+			while(signE > signS)
+			{
+				opes[opes.length] = ['area', signS, signE];
+				for(j = signS; j < signE; j++)
+				{
+					opes[opes.length] = ['compare', j, j + 1];
+					if(tmpNums[j] > tmpNums[j + 1])
+					{
+						opes[opes.length] = ['trans', j, j + 1];
+						var tmp = tmpNums[j];
+						tmpNums[j] = tmpNums[j + 1];
+						tmpNums[j + 1] = tmp;
+					}
+				}
+				signE--;
+				opes[opes.length] = ['area', signS, signE];
+				for(j = signE; j > signS; j--)
+				{
+					opes[opes.length] = ['compare', j, j - 1];
+					if(tmpNums[j] < tmpNums[j - 1])
+					{
+						opes[opes.length] = ['trans', j, j - 1];
+						var tmp = tmpNums[j];
+						tmpNums[j] = tmpNums[j - 1];
+						tmpNums[j - 1] = tmp;
+					}
+				}
+				signS++;
+			}
+			opes[opes.length] = ['area', -1,-1];
+		}
+		function bubbleSort()
 		{
 			for(i = tmpNums.length - 1; i > 0; i--)
 			{
@@ -628,12 +705,12 @@
 				doing = true;
 				if(i >= tmpNums.length - 1)
 				{
-					monkeys = 1;
 					auto = 0;
 					doing = false;
 					$('#pause').html('播放');
 					tmpNums = nums.slice();
 					alert('量子猴排居然成功了！本次共创建了' + monkeys + '只量子猴子去不同的宇宙排序');
+					monkeys = 1;
 					return;
 				}
 				$($('.bar:eq(' + i+ ')')[0].children[0]).css('background', 'yellow');
