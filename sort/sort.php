@@ -21,16 +21,14 @@ function quick($arr)
 	$signS = $start;
 	$signE = $end - 1;
 	$opes  = array();
-	$opes[] = array('area', $start, $end);
-	$opes[] = array('sign', $arr[$end]);
+	$opes[] = array('area', $start, $end, $arr[$end]);
 	while(TRUE)
 	{
 		if($end - $start < 2)
 		{
 			if($end - $start > 0)
 			{
-				$opes[] = ['area', $start, $end];
-				$opes[] = ['sign', $arr[$end]];	
+				$opes[] = ['area', $start, $end, $arr[$end]];
 				$opes[] = ['compare', $start, $end];
 				if($arr[$start] > $arr[$end])
 				{
@@ -48,8 +46,7 @@ function quick($arr)
 			$signE = $end - 1;
 			if($end - $start >1)
 			{
-				$opes[] = ['area', $start, $end];
-				$opes[] = ['sign', $arr[$end]];
+				$opes[] = ['area', $start, $end, $arr[$end]];
 			}
 		}
 		else
@@ -61,13 +58,15 @@ function quick($arr)
 					$opes[] = ['compare', $signS, $end];
 					$signS++;
 				}
-				$opes[] = ['compare', $signS, $end];
+				if($signS < $signE)
+					$opes[] = ['compare', $signS, $end];
 				while($signS < $signE && $arr[$signE] >= $arr[$end])
 				{
 					$opes[] = ['compare', $signE, $end];
 					$signE--;
 				}
-				$opes[] = ['compare', $signE, $end];
+				if($signS < $signE)
+					$opes[] = ['compare', $signE, $end];
 				$opes[] = ['compare', $signS, $signE];
 				if($signS != $signE)
 				{
@@ -94,12 +93,10 @@ function quick($arr)
 			$signE = $end - 1;
 			if($end - $start >1)
 			{
-				$opes[] = ['area', $start, $end];
-				$opes[] = ['sign', $arr[$end]];
+				$opes[] = ['area', $start, $end, $arr[$end]];
 			}
 		}
 	}
-	$opes[] = ['area', -1,-1];
-	$opes[] = ['sign', 0];
+	$opes[] = ['area', -1,-1, -1];
 	return $opes;
 }

@@ -4,6 +4,8 @@
 	<meta charset="utf-8">
 	<title>排序可视化</title>
 	<link rel="icon" href="sort.png" type="image/x-icon" />
+	<!-- <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/> -->
+
 	<style>
 	*{
 		margin: 0px;
@@ -19,7 +21,7 @@
 		left: 2%;
 		width: 14%;
 		height: 90%;
-		background: rgb(40, 40, 40);
+		background: black;
 		color: orange;
 		font-weight: bold;
 		font-size: 18px;
@@ -28,10 +30,6 @@
 		width: 100%;
 		height: 60%;
 		text-align: center;
-	}
-	#option-control table{
-		width: 100%;
-		height: 100%;
 	}
 	#option-description{
 		width: 100%;
@@ -50,9 +48,9 @@
 		font-size: 18px;
 	}
 	#control{
-		background: rgb(40, 40, 40);
+		background: black;
 		position: absolute;
-		top : 81%;
+		top :calc(80% + 30px);
 		bottom: 5%;
 		left: 18%;
 		width: 80%;
@@ -64,25 +62,52 @@
 		text-align: center;
 		color: orange;
 	}
-	#description{
-		font-size: 12px;
-		text-align: left;
-		padding: 5px;
-	}
-
 	#field{
 		position: absolute;
 		top: 5%;
 		left: 18%;
 		width: 80%;
 		height:75%;
-		background: rgb(40, 40, 40);
 	}
-	#platform{
-		position: absolute;
-		width: 100%;
+	.bar{
+		background: black;
+		position:absolute;
 		height: 100%;
-
+		transition: all 300ms ease;
+	}
+	.show{
+		position: absolute;
+		width: 90%;
+		margin-left: 5%;
+		margin-right: 5%;
+		background: orange;
+		color: white;
+		bottom:0;
+	}
+	.value{
+		background: rgb(180, 130, 0);
+		position: absolute;
+		text-align: center;
+		bottom: -24px;
+		height: 22px;
+		width: 90%;
+		margin-left: 5%;
+		margin-right: 5%;
+	}
+	.sign{
+		position: absolute;
+		height: 2px;
+		width: 100%;
+		background: lightgreen;
+		display: none;
+	}
+	.area{
+		background: gray;
+	}
+	#description{
+		font-size: 12px;
+		text-align: left;
+		padding: 5px;
 	}
 	</style>
 </head>
@@ -91,8 +116,7 @@
 		<table id=option-description>
 			<tr><td id=description></td></tr>
 		</table>
-		<form id="option-control" onsubmit="spawn();return false;">
-		<table>
+		<table id="option-control">
 			<tr>
 				<td>排序数量</td>
 				<td><input type="text" id="length" name="length" value="20"></td>
@@ -147,6 +171,9 @@
 						<option value="cocktailShaker">
 							鸡尾酒
 						</option>
+						<option value="quantumBogo">
+							量子猴排
+						</option>
 						<option value="shell" disabled>
 							希尔
 						</option>
@@ -157,22 +184,22 @@
 				<td>步进速度</td>
 				<td>
 					<select class="options" name="speed">
-						<option value="120">
+						<option value="2000">
 							2s
 						</option>
-						<option value="60">
+						<option value="1000">
 							1s
 						</option>
-						<option value="30">
+						<option value="500">
 							0.5s
 						</option>
-						<option selected value="20">
+						<option selected value="300">
 							0.3s
 						</option>
-						<option value="10">
+						<option value="100">
 							0.1s
 						</option>
-						<option value="1">
+						<option value="0">
 							Fasted
 						</option>
 					</select>
@@ -180,10 +207,8 @@
 			</tr>
 			<tr></tr>
 		</table>
-		</form>
 	</div>
 	<div id=field>
-		<canvas id="platform" width="1000"; height="1000"></canvas>
 	</div>
 	<div id=control>
 		<table><tr>
@@ -199,44 +224,27 @@
 			newFun();
 			spawn();
 			sort();
-			tickStart();
-			//
-			// $('#platform').showNums();
-			// $('#platform').area(0, 3, 50);
-			// setTimeout(function(){$('#platform').compare(2, 4);setTimeout(function(){$('#platform').area();}, 1000)}, 1000);
-			
+			// $('.bar:eq(2)').area($('.bar:eq(10)'));
+			// sign(20);
 		});
 
-		//canvas
-		var cvsHeight = 1000;
-		var cvsWidth = 1000;
-
-		//array
 		var length = 20;
 		var type = 'random';
-		//var
-		var nums = [];
 
-		//sort
+		var auto = 2;
+		var speed = 300;
+
 		var solution = 'bubble';
-		//var
-		var tmpNums = [];
+
+		var nums = [];
 		var opes = [];
 
-		//control
-		var auto = 2;
-		var speed = 20;
-		var tmpPass = false;
-		//var
 		var step = 0;
-		var opeNums = [];
-		var areaStore = [-1, -1, -1];
-		var activeStore = [];
+		var tmpNums = [];
 
-		//tick
-		var tick = 0;
+		var done = false;
+		var doing = false;
 
-		//other
 		var monkeys = 1;
 
 		var description = {
@@ -244,88 +252,10 @@
 			quick : '(1)设置数组最后一个元素为哨兵（或第一个），在比较域从左搜索大于哨兵的、从右搜索小于哨兵的进行交换，直至比较到同一个元素<br>(2)如果当前比较到的元素比哨兵大，交换它俩，否则不变<br>(3)依次对当前元素左右两侧重复1,2的步骤，直到无可比较元素。<br>注：可采用递归或非递归(循环加堆栈)实现<br>优点：很快<br>缺点：内存消耗过大',
 			insertion : '第一个元素为一个有序数组(数组内只有一个元素，自然是排好序的)，将第2个元素插入到这个数组内，使这个数组依然有序。依次插入后面的元素直至最后一个<br>插入方法为有序数组从大到小向右移动，直至到达对应的位置<br>优点：比冒泡快<br>缺点：对逆序数组排序，速度降至冒泡级别',
 			selection : '(1)从第一元素开始向右查找最小的元素，与第一元素交换位置<br>(2)从下一个元素开始查找<br>(3)重复2直至只剩一个元素',
+			quantumBogo : 'Bogo排序(猴子排序)，是一种恶搞排序算法<br>依照量子理论的平行宇宙，让一群猴子在不同的宇宙把数组随机打乱，如果不是正确顺序，则销毁这个宇宙去查看下一个宇宙<br>优点：神TM优点<br>缺点：太慢了！',
 			cocktailShaker : '跟冒泡排序很像，只不过是来回冒泡，蛮好看的2333'
 
 		};
-
-
-		function tickStart()
-		{
-			tick++;
-			if(auto == 0 && !tmpPass)
-				tick--;
-		　　 requestAnimationFrame(tickStart);
-			if(auto == 0 && !tmpPass)
-			{
-				$('#pause').html('播放');
-				return;
-			}
-			if(tick >= speed)
-				tick = 0;
-
-			if(activeStore.length != 0 && speed > 9)
-			{
-				switch(activeStore[0])
-				{
-					case 'area' :
-						if(tick == 0)
-							$('#platform').area(areaStore[0], areaStore[1], areaStore[2]);
-					break;
-					case 'trans' :
-						if(tick != 0)
-							$('#platform').trans(activeStore[1], activeStore[2], activeStore[3], tick);
-					break;
-					case 'setVal' : 
-						if(tick != 0)
-							$('#platform').setVal(activeStore[1], activeStore[2], activeStore[3], tick);
-				}
-				if(tick == 0)
-				{
-					tmpPass = false;
-					activeStore = [];
-				}
-				return;
-			}
-			if (tick != 0)
-				return;
-
-			if(step >= opes.length)
-			{
-				end();
-				return;
-			}
-			switch(opes[step][0])
-			{
-				case 'area' :
-					if(auto < 2 && !tmpPass)
-					{
-						$('#pause').html('播放');
-						return;
-					}
-					if(opes[step].length < 2)
-						opes[step][1] = -1;
-					if(opes[step].length < 3)
-						opes[step][2] = -1;
-					if(opes[step].length < 4)
-						opes[step][3] = -1;
-					$('#platform').area(opes[step][1], opes[step][2], opes[step][3]);
-				break;
-				case 'compare' :
-					if(opes[step].length < 3)
-						opes[step][2] = -1;
-					$('#platform').compare(opes[step][1], opes[step][2]);
-				break;
-				case 'trans' :
-					$('#platform').trans(opes[step][1], opes[step][2]);
-				break;
-				case 'setVal' :
-					$('#platform').setVal(opes[step][1], opes[step][2]);
-				break;
-			}
-			if(activeStore.length == 0 || speed == 1)
-				tmpPass = false;
-			step++;
-		}
 
 		function sort()
 		{
@@ -356,14 +286,18 @@
 					$('#description').html(description.cocktailShaker);
 					cocktailShakerSort();
 				break;
+				case 'quantumBogo':
+					monkeys = 1;
+					$('#description').html(description.quantumBogo);
+					opes = [
+						['area', 0, nums.length - 1],
+						['compareAll'],
+						['random'],
+						['goto', 0]
+					];
+				break;
 			}
-			opeNums = nums.slice();
 		}
-
-		//---------------------
-		// sort
-		//---------------------
-
 		function selectionSort()
 		{
 			var tmpMin;
@@ -386,15 +320,15 @@
 			}
 			opes[opes.length] = ['area', -1, -1];
 		}
-
 		function insertionSort()
 		{
 			var tmpMin;
 			for(var i = 1; i < tmpNums.length; i++)
 			{
+				opes[opes.length] = ['area', 0, i];
 				var tmpVal = tmpNums[i];
-				opes[opes.length] = ['area', 0, i, tmpVal];
 				var j = i - 1;
+				opes[opes.length] = ['sign', tmpVal];
 				opes[opes.length] = ['compare', j, j];
 				for(; j >= 0 && tmpVal < tmpNums[j]; j--)
 				{
@@ -404,11 +338,11 @@
 					opes[opes.length] = ['compare', j - 1, j - 1];
 				}
 				opes[opes.length] = ['setVal', j + 1, tmpVal];
+				opes[opes.length] = ['sign', 0];
 				tmpNums[j + 1] = tmpVal;
 			}
-			opes[opes.length] = ['area', -1, -1, -1];
+			opes[opes.length] = ['area', -1, -1];
 		}
-
 		function quickSort()
 		{
 			$.ajax({
@@ -430,7 +364,6 @@
 				}
 			});
 		}
-
 		function cocktailShakerSort()
 		{
 			var signS = 0;
@@ -466,7 +399,6 @@
 			}
 			opes[opes.length] = ['area', -1,-1];
 		}
-
 		function bubbleSort()
 		{
 			for(i = tmpNums.length - 1; i > 0; i--)
@@ -486,6 +418,88 @@
 			}
 			opes[opes.length] = ['area', -1,-1];
 		}
+
+		function stepShow(pass = false)
+		{
+			if(done)
+			{
+				step = 0;
+				done = false;
+				showNums();
+			}
+			if(tmpNums.length == 0)
+			{
+				tmpNums = nums.slice();
+				$('#pause').html('播放');
+			}
+			if(auto == 0 && pass == false)
+			{
+				$('#pause').html('播放');
+				return;
+			}
+			if(step == opes.length)
+			{
+				done = true;
+				$('#pause').html('播放');
+			}
+			else
+			{
+				var go = true;
+				switch(opes[step][0]){
+					case 'area':
+						if(auto < 2 && pass == false)
+						{
+							$('#pause').html('播放');
+							return;
+						}
+						else if(opes[step][1] == -1)
+						{
+							$('.area').removeClass('area');
+						}
+						else
+						{
+							$('.bar:eq(' + opes[step][1] + ')').area($('.bar:eq(' + opes[step][2] + ')'));
+						}
+					break;
+					case 'compare':
+						$('.bar:eq(' + opes[step][1] + ')').compare($('.bar:eq(' + opes[step][2] + ')'));
+					break;
+					case 'trans':
+						$('.bar:eq(' + opes[step][1] + ')').trans($('.bar:eq(' + opes[step][2] + ')'));
+					break;
+					case 'setVal':
+						$('.bar:eq(' + opes[step][1] + ')').setVal(opes[step][2]);
+					break;
+					case 'sign':
+						sign(opes[step][1]);
+					break;
+					case 'random':
+						if(auto < 2 && pass == false)
+						{
+							$('#pause').html('播放');
+							return;
+						}
+						$('.bar').random();
+					break;
+					case 'compareAll':
+						go = false;
+						$('.bar').compareAll();
+					break;
+					case 'goto':
+						if(doing)
+						{
+							step--;
+							break;
+						}
+						step = opes[step][1] - 1;
+					break;
+				}
+				step++;
+				if(go)
+					setTimeout(function(){stepShow();}, speed);
+			}
+		}
+
 		function spawn()
 		{
 			length =  $('#length').val();
@@ -549,8 +563,24 @@
 					}
 				break;
 			}
-			$('#platform').showNums();
+			showNums();
 			sort();
+		}
+
+		function showNums(showNums = false)
+		{
+			if(false == showNums)
+				showNums = nums;
+			$('#field').empty();
+			for(var i = 0; i < length; i++)
+			{
+				$('#field').append('<div class=bar><div class=show></div><div class=value></div><div class=sign></div></div>');
+				var now = $('.bar:eq(' + i + ')');
+				$(now[0].children[1]).html(showNums[i]);
+				now.css('width', 100 / length + '%');
+				$(now[0].children[0]).css('height', showNums[i] + '%');
+				now.css('left', (100 / length) * i + '%');
+			}
 		}
 
 		function newFun()
@@ -561,10 +591,11 @@
 				{
 					case 'length':
 						if($(this).val() > 1000)
-						{
-							$(this).val(length);
-							alert('最多只能对1000个数进行排序');
-						}
+							if( ! confirm('排序数量超过1000将有可能导致卡死，是否继续？'))
+							{
+								$(this).val(length);
+								return;
+							}
 					break;
 				}
 			});
@@ -577,179 +608,142 @@
 					break;
 					case 'solution':
 						solution = $(this).val();
+						showNums();
 						sort();
-						$('#platform').showNums();
 					break;
 				}
 			});
 			$('button').on('click', function(){
 				switch($(this).html())
 				{
+					case '生成数组':
+						spawn();
+					break;
 					case '暂停':
-						$(this).html('播放');
 						auto = 0;
+						$(this).html('播放');
 					break;
 					case '播放':
-						$(this).html('暂停');
 						auto = 2;
+						$(this).html('暂停');
+						stepShow();
 					break;
 					case '一轮循环':
-						$('#pause').html('暂停');
-						tmpPass = true;
 						auto = 1;
+						if($('#pause').html() == '暂停')
+							return;
+						$('#pause').html('暂停');
+						stepShow(true);
 					break;
 					case '步进':
 						auto = 0;
-						tmpPass = true;
-						$('#pause').html('播放');
+						if($('#pause').html() == '暂停')
+							return;
+						stepShow(true);
 					break;
 					case '重置':
-						$('#platform').showNums();
-						end();
+						auto = 0;
+						step = 0;
+						showNums();
+						$('#pause').html('播放');
 					break;
 				}
 			});
+
+			$.fn.area = function(end){
+				$('.area').removeClass('area');
+				for(var i = $(this).index(); i <= $(end).index(); i++)
+				{
+					$($('.bar:eq(' + i + ')'))[0].classList.add('area');
+				}
+			};
+
+			$.fn.compare = function(other)
+			{
+				var indexA = this.index();
+				var indexB = other.index();
+				$($(this)[0].children[0]).css('background', 'yellow');
+				$($(other)[0].children[0]).css('background', 'yellow');
+				setTimeout(function(){
+					$($('.bar:eq(' + indexA + ')')[0].children[0]).css('background', 'orange');
+					$($('.bar:eq(' + indexB + ')')[0].children[0]).css('background', 'orange');
+				}, speed);
+			}
+
+			$.fn.trans = function(other)
+			{
+				var a = $($(this)[0].children[1]).html();
+				var b = $($(other)[0].children[1]).html();
+				$($(this)[0].children[0]).css('height', b + '%');
+				$($(this)[0].children[1]).html(b);
+				$($(other)[0].children[0]).css('height', a + '%');
+				$($(other)[0].children[1]).html(a);
+			}
+
+			$.fn.setVal = function(val)
+			{
+				$($(this)[0].children[0]).css('height', val + '%');
+				$($(this)[0].children[1]).html(val);
+			}
+
+			$.fn.random = function()
+			{
+				monkeys++;
+				var tmpRandomArr = tmpNums.slice();
+				for(i = 0; i < tmpNums.length; i++)
+				{
+					var index = parseInt(Math.random() * (tmpNums.length - i));
+					tmpNums[i] = tmpRandomArr[index];
+					tmpRandomArr[index] = tmpRandomArr[tmpNums.length - i - 1];
+				}
+				showNums(tmpNums);
+				tmpRandomArr = null;
+			}
+
+			$.fn.compareAll = function(i = 0)
+			{
+				doing = true;
+				if(i >= tmpNums.length - 1)
+				{
+					auto = 0;
+					doing = false;
+					$('#pause').html('播放');
+					tmpNums = nums.slice();
+					alert('量子猴排居然成功了！本次共创建了' + monkeys + '只量子猴子去不同的宇宙排序');
+					monkeys = 1;
+					return;
+				}
+				$($('.bar:eq(' + i+ ')')[0].children[0]).css('background', 'yellow');
+				$($('.bar:eq(' + (i + 1) + ')')[0].children[0]).css('background', 'yellow');
+				setTimeout(function(){
+					$($('.bar:eq(' + i + ')')[0].children[0]).css('background', 'orange');
+					$($('.bar:eq(' + (i + 1) + ')')[0].children[0]).css('background', 'orange'); 	
+					if(tmpNums[i] > tmpNums[i + 1])
+					{
+						doing = false;
+						setTimeout(function()
+						{
+							stepShow();
+						}, speed);
+						return;
+					}
+					i++;
+					$(this).compareAll(i);
+				}, speed);
+			}
 		}
 
-
-		$.fn.showNums = function(showNums = false)
-		{
-			var ctx = this[0].getContext("2d");
-			var blockWidth = cvsWidth / length;
-
-			if(showNums == false)
+		function sign(height = 0){
+			$('.sign').hide();
+			if(height != 0)
 			{
-				ctx.clearRect(0, 0, cvsWidth, cvsHeight);
-				opeNums = nums.slice();
-				showNums = nums.slice();
+				var tmpList = $('.area');
+				for(var i = 0; i < tmpList.length; i++)
+				{
+					$($(tmpList[i])[0].children[2]).css('display', 'block');
+					$($(tmpList[i])[0].children[2]).css('top', (100 - height) + '%');
+				}
 			}
-
-			ctx.fillStyle = "orange";
-			for(var i = 0; i < length; i++)
-			{
-				var blockX = blockWidth * (i + 0.1);
-				var blockHeight = showNums[i] * (cvsHeight / 100);
-				ctx.fillRect(blockX, cvsHeight - blockHeight, blockWidth * 0.8, blockHeight);
-			}
-		}
-
-		$.fn.area = function(start = -1, end = -1, sign = -1)
-		{
-			if(sign == -2)
-			{
-				areaStore = [start, end, areaStore[2]];
-			}
-			else
-			{
-				areaStore = [start, end, sign];
-			}
-			var ctx = this[0].getContext("2d");
-			var blockWidth = cvsWidth / length;
-			ctx.clearRect(0, 0, cvsWidth, cvsHeight);
-			if(start != -1)
-			{
-				ctx.fillStyle = "gray";
-				ctx.fillRect(blockWidth * start, 0, blockWidth * (end - start + 1), cvsHeight);
-			}
-			this.showNums(opeNums);
-			this.sign(sign);
-		}
-
-		$.fn.sign = function(sign = -1)
-		{
-			if(sign != -1)
-			{
-				var ctx = this[0].getContext("2d");
-				var blockWidth = cvsWidth / length;
-				ctx.beginPath();
-				ctx.moveTo(blockWidth * areaStore[0], (100 - areaStore[2]) * cvsHeight / 100);
-				ctx.lineTo(blockWidth * (areaStore[1] + 1), (100 - areaStore[2]) * cvsHeight / 100);
-				ctx.closePath();
-				ctx.strokeStyle = "lightblue";
-				ctx.lineWidth = cvsHeight / 100 / 2;
-				ctx.stroke();
-			}
-		}
-
-		$.fn.compare = function(first, second = -1)
-		{
-			this.area(areaStore[0], areaStore[1], -2);
-			var ctx = this[0].getContext("2d");
-			var blockWidth = cvsWidth / length;
-			ctx.fillStyle = "yellow";
-			ctx.fillRect(blockWidth * (first + 0.1), cvsHeight - opeNums[first] * (cvsHeight / 100), blockWidth * 0.8, opeNums[first] * (cvsHeight / 100));
-			if(second != -1)
-			{
-				ctx.fillRect(blockWidth * (second + 0.1), cvsHeight - opeNums[second] * (cvsHeight / 100), blockWidth * 0.8, opeNums[second] * (cvsHeight / 100));
-			}
-			activeStore = ['area'];
-			this.sign(areaStore[2]);
-		}
-
-		$.fn.trans = function(first, second, move = 0, tick = 0)
-		{
-			this.area(areaStore[0], areaStore[1], -2);
-			var ctx = this[0].getContext("2d");
-			var blockWidth = cvsWidth / length;
-
-			var leftStep = (speed - tick);
-			var allLength = (second - first) * blockWidth;
-			var doneLength = allLength * move;
-			var nextLength = (allLength - doneLength) / leftStep;
-			move = (nextLength + doneLength) / allLength;
-
-			if(doneLength == 0)
-			{
-				tmpVal = opeNums[first];
-				opeNums[first] = opeNums[second];
-				opeNums[second] = tmpVal;
-			}
-
-			ctx.fillStyle = "gray";
-			ctx.fillRect(blockWidth * (first + 0.1), cvsHeight - opeNums[first] * (cvsHeight / 100), blockWidth * 0.8, opeNums[first] * (cvsHeight / 100));
-			ctx.fillRect(blockWidth * (second + 0.1), cvsHeight - opeNums[second] * (cvsHeight / 100), blockWidth * 0.8, opeNums[second] * (cvsHeight / 100));
-			ctx.fillStyle = "lightgreen";
-			if(move == 1)
-				ctx.fillStyle = 'orange';
-			ctx.fillRect(blockWidth * (first + 0.1) + doneLength + nextLength, cvsHeight - opeNums[second] * (cvsHeight / 100), blockWidth * 0.8, opeNums[second] * (cvsHeight / 100));
-			ctx.fillRect(blockWidth * (second + 0.1) - doneLength - nextLength, cvsHeight - opeNums[first] * (cvsHeight / 100), blockWidth * 0.8, opeNums[first] * (cvsHeight / 100));
-			activeStore = ['trans', first, second, move];
-
-			this.sign(areaStore[2]);
-		}
-
-		$.fn.setVal = function(index, value, move = 0, tick = 0)
-		{
-			if(move == 0)
-			{
-				move = value - opeNums[index];
-				opeNums[index] = value;
-			}
-			this.area(areaStore[0], areaStore[1], -2);
-			var ctx = this[0].getContext("2d");
-			var blockWidth = cvsWidth / length;
-
-			var leftStep = speed - tick;
-			var nextLength = move / leftStep;
-			move = move - nextLength;
-
-			ctx.fillStyle = "gray";
-			ctx.fillRect(blockWidth * (index + 0.1), cvsHeight - opeNums[index] * (cvsHeight / 100), blockWidth * 0.8, opeNums[index] * (cvsHeight / 100));
-			ctx.fillStyle = "lightblue";
-			if(move == 0)
-				ctx.fillStyle = 'orange';
-			ctx.fillRect(blockWidth * (index + 0.1), cvsHeight - (opeNums[index] - move) * (cvsHeight / 100), blockWidth * 0.8, (opeNums[index] - move) * (cvsHeight / 100));
-			activeStore = ['setVal', index, value, move];
-
-			this.sign(areaStore[2]);
-		}
-
-		function end()
-		{
-			auto = 0;
-			step = 0;
-			opeNums = nums.slice();
-			$('#pause').html('播放');
 		}
 	</script>
 </body>
