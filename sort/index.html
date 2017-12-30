@@ -395,13 +395,13 @@
 				var tmpVal = tmpNums[i];
 				opes[opes.length] = ['area', 0, i, tmpVal];
 				var j = i - 1;
-				opes[opes.length] = ['compare', j, j];
+				opes[opes.length] = ['compare', j, -1];
 				for(; j >= 0 && tmpVal < tmpNums[j]; j--)
 				{
 					opes[opes.length] = ['setVal', j + 1, tmpNums[j]];
 					tmpNums[j + 1]= tmpNums[j];
 					if(j != 0)
-					opes[opes.length] = ['compare', j - 1, j - 1];
+					opes[opes.length] = ['compare', j - 1, -1];
 				}
 				opes[opes.length] = ['setVal', j + 1, tmpVal];
 				tmpNums[j + 1] = tmpVal;
@@ -678,12 +678,22 @@
 			var blockWidth = cvsWidth / length;
 			ctx.fillStyle = "yellow";
 			ctx.fillRect(blockWidth * (first + 0.1), cvsHeight - opeNums[first] * (cvsHeight / 100), blockWidth * 0.8, opeNums[first] * (cvsHeight / 100));
+			activeStore = ['area'];
 			if(second != -1)
 			{
 				ctx.fillRect(blockWidth * (second + 0.1), cvsHeight - opeNums[second] * (cvsHeight / 100), blockWidth * 0.8, opeNums[second] * (cvsHeight / 100));
+				this.sign(areaStore[2]);
 			}
-			activeStore = ['area'];
-			this.sign(areaStore[2]);
+			else
+			{
+				ctx.beginPath();
+				ctx.moveTo(blockWidth * areaStore[0], (100 - areaStore[2]) * cvsHeight / 100);
+				ctx.lineTo(blockWidth * (areaStore[1] + 1), (100 - areaStore[2]) * cvsHeight / 100);
+				ctx.closePath();
+				ctx.strokeStyle = "yellow";
+				ctx.lineWidth = cvsHeight / 100 / 2;
+				ctx.stroke();
+			}
 		}
 
 		$.fn.trans = function(first, second, move = 0, tick = 0)
